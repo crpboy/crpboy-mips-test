@@ -90,6 +90,8 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
 
     FILE * fp = dump_msg ? freopen(filename, "w", stdout) : NULL;
 
+    bool func_run_success = true;
+
     // func mem at 0x1fc00000 and 0x0
     // mmio_mem perf_mem(262144*4, "../resource/vivado/func_test_v0.01/soft/func/obj/main.bin");
     mmio_mem perf_mem(262144*4, "../resource/vivado/func_test/soft/func_lab9/obj/main.bin");
@@ -105,7 +107,7 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
     confreg.setDebugConfig(dump_msg);
     confreg.setFileOutput(fp);
     // confreg.set_trace_file("../resource/vivado/func_test_v0.01/cpu132_gettrace/golden_trace.txt");
-    confreg.set_trace_file("../resource/vivado/func_test/cpu132_gettrace/golden_trace.txt");
+    confreg.set_trace_file("../resource/vivado/func_test/trace/golden_trace.txt");
     assert(mmio.add_dev(0x1faf0000,0x10000,&confreg));
 
     // connect Vcd for trace
@@ -142,7 +144,12 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
                 printf("Number %d Functional Test Point PASS!\n", test_point>>24);
             }
         }
-        if (top->aclk) running = confreg.do_trace(top->debug_wb_pc,top->debug_wb_rf_wen,top->debug_wb_rf_wnum,top->debug_wb_rf_wdata);
+        if (top->aclk) {
+            running = confreg.do_trace(top->debug_wb_pc,top->debug_wb_rf_wen,top->debug_wb_rf_wnum,top->debug_wb_rf_wdata);
+            if(!running) {
+                func_run_success = false;
+            }
+        }
         if (top->debug_wb_pc == 0xbfc00100u) running = false;
         if (trace_on) {
             vcd.dump(ticks);
@@ -154,6 +161,9 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
         }
         else last_commit = ticks;
         ticks ++;
+    }
+    if(func_run_success) {
+        printf("func test passed!!!\n");
     }
     if (trace_on) vcd.close();
     top->final();
