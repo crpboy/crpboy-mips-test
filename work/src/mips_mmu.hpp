@@ -97,29 +97,31 @@ private:
             return true;
         }
         else {
-            mips_tlb *tlbe = tlb_match(va, asid);
-            if (!tlbe) {
-                to_refill = true;
-                return false;
-            }
-            if (((va >> 12) & 1) && tlbe->V1) {
-                dirty = tlbe->D1;
-                // pa = va;
-                pa = (va & 0xfff) | (tlbe->PFN1 << 12);
-                // printf("pa ok! pa=%x\n", pa);
-                return true;
-            }
-            else if (((va >> 12) & 1) == 0 && tlbe->V0) {
-                dirty = tlbe->D0;
-                // pa = va;
-                pa = (va & 0xfff) | (tlbe->PFN0 << 12);
-                // printf("pa ok! pa=%x\n", pa);
-                return true;
-            }
-            else {
-                // printf("tlblo err\n");
-                return false;
-            }
+            pa = va;
+            return true;
+            // mips_tlb *tlbe = tlb_match(va, asid);
+            // if (!tlbe) {
+            //     to_refill = true;
+            //     return false;
+            // }
+            // if (((va >> 12) & 1) && tlbe->V1) {
+            //     dirty = tlbe->D1;
+            //     pa = va;
+            //     // pa = (va & 0xfff) | (tlbe->PFN1 << 12);
+            //     // printf("pa ok! pa=%x\n", pa);
+            //     return true;
+            // }
+            // else if (((va >> 12) & 1) == 0 && tlbe->V0) {
+            //     dirty = tlbe->D0;
+            //     pa = va;
+            //     // pa = (va & 0xfff) | (tlbe->PFN0 << 12);
+            //     // printf("pa ok! pa=%x\n", pa);
+            //     return true;
+            // }
+            // else {
+            //     // printf("tlblo err\n");
+            //     return false;
+            // }
         }
     }
     mips_tlb* tlb_match(uint32_t va, uint8_t asid) {

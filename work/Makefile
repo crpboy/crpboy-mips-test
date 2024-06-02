@@ -14,7 +14,7 @@ perf: obj_dir/V$(TOP_NAME)
 	./obj_dir/Vmycpu_top -perf -dump-msg
 
 perfdiff: obj_dir/V$(TOP_NAME)
-	./obj_dir/Vmycpu_top -perfdiff
+	./obj_dir/Vmycpu_top -perfdiff -trace 10000000
 
 perf4: obj_dir/V$(TOP_NAME)
 	./obj_dir/Vmycpu_top -perf -prog 4 -trace 1000000
@@ -24,6 +24,9 @@ trace: obj_dir/V$(TOP_NAME)
 
 wave:
 	gtkwave trace.vcd config.gtkw
+
+wavediff:
+	gtkwave trace-perf-1.vcd config.gtkw
 
 clean:
 	rm -rf obj_dir
