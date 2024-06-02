@@ -14,7 +14,7 @@ perf: obj_dir/V$(TOP_NAME)
 	./obj_dir/Vmycpu_top -perf -dump-msg
 
 perfdiff: obj_dir/V$(TOP_NAME)
-	./obj_dir/Vmycpu_top -perfdiff -trace 10000000
+	./obj_dir/Vmycpu_top -perfdiff
 
 perf4: obj_dir/V$(TOP_NAME)
 	./obj_dir/Vmycpu_top -perf -prog 4 -trace 1000000

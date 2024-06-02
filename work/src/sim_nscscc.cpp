@@ -169,6 +169,11 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
     top->final();
 }
 
+const int ref_scores[10] = {
+    0x13CF7FA, 0x7BDD47E, 0x10CE6772, 0xAA1AA5C, 0x1FC00D8,
+    0x719615A, 0x6E0009A, 0x74B8B20,  0x853B00,  0x50A1BCC,
+};
+int dut_scores[10] = {0};
 void perf_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_start = 1, int test_end = 10) {
     axi4     <32,32,4> mmio_sigs;
     axi4_ref <32,32,4> mmio_sigs_ref(mmio_sigs);
@@ -192,12 +197,7 @@ void perf_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_start = 1,
     uint32_t inst_count = 0;
     uint32_t last_pc = 0;
 
-    static const int ref_scores[10] = {
-        0x13CF7FA, 0x7BDD47E, 0x10CE6772, 0xAA1AA5C, 0x1FC00D8,
-        0x719615A, 0x6E0009A, 0x74B8B20,  0x853B00,  0x50A1BCC,
-    };
-    static int dut_scores[10] = {0};
-    
+    printf("perf test is running...\n");
     printf("==================ticks===================\n");
     for (int test=test_start;test<=test_end && running;test++) {
         bool test_end = false;
@@ -260,14 +260,16 @@ void perf_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_start = 1,
     printf("total insts = %lu\n", inst_count);
     printf("total ticks = %lu\n", ticks);
     printf("IPC = %.3f\n", inst_count * 1.0 / ticks);
+    printf("=========================================\n");
+    printf("perf test done!");
 }
 
 void cemu_perf_diff(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_start = 1, int test_end = 10) {
     // cemu {
     memory_bus cemu_mmio;
     
-    // mmio_mem cemu_func_mem(262144*4, "../resource/vivado/perf_test_v0.01/soft/perf_func/obj/allbench/inst_data.bin");
-    mmio_mem cemu_func_mem(262144*4, "../resource/vivado/func_test/soft/func_lab9/obj/main.bin");
+    mmio_mem cemu_func_mem(262144*4, "../resource/vivado/perf_test_v0.01/soft/perf_func/obj/allbench/inst_data.bin");
+    // mmio_mem cemu_func_mem(262144*4, "../resource/vivado/func_test/soft/func_lab9/obj/main.bin");
     cemu_func_mem.set_allow_warp(true);
     assert(cemu_mmio.add_dev(0x1fc00000,0x100000  ,&cemu_func_mem));
     assert(cemu_mmio.add_dev(0x00000000,0x10000000,&cemu_func_mem));
@@ -287,8 +289,8 @@ void cemu_perf_diff(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_star
     axi4_xbar<32,32,4> mmio(axi_fast ? 0 : 23);
 
     // perf mem at 0x1fc00000
-    // mmio_mem perf_mem(262144*4, "../resource/vivado/perf_test_v0.01/soft/perf_func/obj/allbench/inst_data.bin");
-    mmio_mem perf_mem(262144*4, "../resource/vivado/func_test/soft/func_lab9/obj/main.bin");
+    mmio_mem perf_mem(262144*4, "../resource/vivado/perf_test_v0.01/soft/perf_func/obj/allbench/inst_data.bin");
+    // mmio_mem perf_mem(262144*4, "../resource/vivado/func_test/soft/func_lab9/obj/main.bin");
     assert(mmio.add_dev(0x1fc00000,0x100000,&perf_mem));
 
     // confreg at 0x1faf0000
@@ -301,8 +303,12 @@ void cemu_perf_diff(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_star
         top->trace(&vcd,0);
     }
     uint64_t ticks = 0;
+    uint32_t inst_count = 0;
+    uint32_t last_pc = 0;
     // rtl soc-simulator }
 
+    printf("perf diff test is running...\n");
+    printf("==================ticks===================\n");
     for (int test=test_start;test<=test_end && running;test++) {
         bool test_end = false;
         confreg.set_switch(test);
@@ -324,6 +330,8 @@ void cemu_perf_diff(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_star
             else top->aresetn = 1;
             top->aclk = !top->aclk;
             if (top->aclk && top->aresetn) mmio_sigs.update_input(mmio_ref);
+            if (top->aclk && top->aresetn && top->debug_wb_pc != last_pc && top->debug_wb_pc)
+                inst_count++, last_pc = top->debug_wb_pc;
             top->eval();
             if (top->aclk && top->aresetn) {
                 confreg.tick();
@@ -377,9 +385,26 @@ void cemu_perf_diff(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref, int test_star
         }
         if (trace_on) vcd.close();
         printf("%x\n",confreg.get_num());
+        dut_scores[test - 1] = confreg.get_num();
     }
     top->final();
     printf("total ticks = %lu\n", ticks);
+
+    double mulscores = 1;
+    printf("==================scores===================\n");
+    for (int test = test_start; test <= test_end; test++) {
+        printf("%.3f\n", ref_scores[test - 1] * 1.0 / dut_scores[test - 1]);
+        mulscores *= ref_scores[test - 1] * 1.0 / dut_scores[test - 1];
+    }
+    if (test_end) {
+        printf("scores = %.3f\n", std::pow(mulscores, 0.1));
+    }
+    printf("=================IPC=====================\n");
+    printf("total insts = %lu\n", inst_count);
+    printf("total ticks = %lu\n", ticks);
+    printf("IPC = %.3f\n", inst_count * 1.0 / ticks);
+    printf("=========================================\n");
+    printf("perf diff test done!");
 }
 
 void ucore_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
