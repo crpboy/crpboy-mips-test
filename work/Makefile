@@ -11,7 +11,7 @@ func: obj_dir/V$(TOP_NAME)
 	@echo "trace is not set!!!!!!!!!!!!!"
 
 perf: obj_dir/V$(TOP_NAME)
-	./obj_dir/Vmycpu_top -perf -dump-msg
+	./obj_dir/Vmycpu_top -perf
 
 perfdiff: obj_dir/V$(TOP_NAME)
 	./obj_dir/Vmycpu_top -perfdiff

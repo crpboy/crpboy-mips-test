@@ -55,6 +55,7 @@ public:
         timer ++;
     }
     bool do_read(uint64_t start_addr, uint64_t size, unsigned char* buffer) {
+        // printf("do_read: st_addr = %llu, size = %llu, buffer = %llu\n",start_addr, size, buffer);
         confreg_read ++;
         assert(size == 4);
         switch (start_addr) {

@@ -88,7 +88,8 @@ void func_run(Vmycpu_top *top, axi4_ref <32,32,4> &mmio_ref) {
     axi4_xbar<32,32,4> mmio(23);
     mmio.setDebugConfig(dump_msg);
 
-    FILE * fp = dump_msg ? freopen(filename, "w", stdout) : NULL;
+    // FILE * fp = dump_msg ? freopen(filename, "w", stdout) : NULL;
+    FILE * fp = NULL;
 
     bool func_run_success = true;
 
